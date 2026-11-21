@@ -1,0 +1,27 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: mall-admin
+  servlet:
+    multipart:
+      # 与 FileUtil.MAX_FILE_SIZE 保持一致（10MB）
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+  mapper-locations: classpath*:/mappers/*.xml
+
+logging:
+  level:
+    com.mall: info

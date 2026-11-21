@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mall_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 1234
+
+# 自定义配置项（对应 com.mall.properties.MallProperties）
+mall:
+  # 上传根目录：相对路径会落在启动目录下，部署到 Linux 时无需改代码
+  upload-dir: ./uploads/
+  # JWT 密钥：长度必须 ≥ 32 字节（HS256 要求），生产环境请改为环境变量注入
+  jwt-secret: mall-admin-dev-secret-key-change-me-32bytes
+  # JWT 有效期（小时）
+  jwt-expire-hours: 12
+
+# 开发环境：打印 MyBatis 执行的 SQL 与参数，方便排查
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.mall: debug

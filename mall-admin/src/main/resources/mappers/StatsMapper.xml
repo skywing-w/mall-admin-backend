@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mall.mapper.StatsMapper">
+
+    <select id="overview" resultType="com.mall.vo.OverviewVO">
+        SELECT
+            (SELECT COALESCE(SUM(pay_amount), 0) FROM `order`
+             WHERE status IN (2, 3) AND DATE(create_time) = CURDATE()) AS todaySales,
+            (SELECT COUNT(*) FROM `order` WHERE DATE(create_time) = CURDATE()) AS todayOrders,
+            (SELECT COUNT(*) FROM c_user WHERE DATE(create_time) = CURDATE()) AS todayNewUsers,
+            (SELECT COUNT(*) FROM `order` WHERE status = 1) AS pendingShipOrders,
+            (SELECT COUNT(*) FROM `order`) AS totalOrders,
+            (SELECT COUNT(*) FROM c_user) AS totalUsers,
+            (SELECT COALESCE(SUM(pay_amount), 0) FROM `order` WHERE status IN (2, 3)) AS totalSales,
+            (SELECT COUNT(*) FROM product WHERE status = 1) AS onSaleProducts
+    </select>
+
+    <select id="salesTrend" resultType="com.mall.vo.SalesTrendVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS `date`,
+               COALESCE(SUM(pay_amount), 0) AS amount,
+               COUNT(*) AS count
+        FROM `order`
+        WHERE status IN (2, 3)
+        <if test="startDate != null and startDate != ''">
+            AND DATE(create_time) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(create_time) &lt;= #{endDate}
+        </if>
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY `date` ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,358 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "电商后台管理系统 API",
+    "description": "B2C 商城后台管理 API（基于 Spring Boot 3.5 + MyBatis-Plus + JWT）",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8080/api", "description": "本地开发" },
+    { "url": "/api", "description": "Nginx 反代" }
+  ],
+  "tags": [
+    { "name": "登录" },
+    { "name": "数据概览" },
+    { "name": "商品分类" },
+    { "name": "商品" },
+    { "name": "轮播图" },
+    { "name": "优惠券" },
+    { "name": "订单" },
+    { "name": "评价" },
+    { "name": "C端用户" },
+    { "name": "收货地址" },
+    { "name": "购物车" },
+    { "name": "统计" },
+    { "name": "角色" },
+    { "name": "部门" },
+    { "name": "操作员" },
+    { "name": "操作日志" },
+    { "name": "文件" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "token": { "type": "apiKey", "in": "header", "name": "token", "description": "JWT Token，登录后获取" }
+    },
+    "schemas": {
+      "Result": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "description": "1=成功 0=失败", "example": 1 },
+          "msg": { "type": "string" },
+          "data": {}
+        }
+      },
+      "PageResult": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "rows": { "type": "array", "items": {} }
+        }
+      },
+      "LoginDTO": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string" },
+          "password": { "type": "string" }
+        }
+      },
+      "LoginVO": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "integer" },
+          "username": { "type": "string" },
+          "name": { "type": "string" },
+          "avatar": { "type": "string" },
+          "roleLabel": { "type": "string" },
+          "token": { "type": "string" },
+          "permissions": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "OverviewVO": {
+        "type": "object",
+        "properties": {
+          "todaySales": { "type": "number" },
+          "todayOrders": { "type": "integer" },
+          "todayNewUsers": { "type": "integer" },
+          "pendingShipOrders": { "type": "integer" },
+          "totalOrders": { "type": "integer" },
+          "totalUsers": { "type": "integer" },
+          "totalSales": { "type": "number" },
+          "onSaleProducts": { "type": "integer" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "categoryId": { "type": "integer" },
+          "categoryName": { "type": "string" },
+          "cover": { "type": "string" },
+          "price": { "type": "number" },
+          "stock": { "type": "integer" },
+          "sales": { "type": "integer" },
+          "status": { "type": "integer", "description": "0=下架 1=上架" },
+          "description": { "type": "string" },
+          "createTime": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "orderNo": { "type": "string" },
+          "userId": { "type": "integer" },
+          "addressId": { "type": "integer" },
+          "totalAmount": { "type": "number" },
+          "payAmount": { "type": "number" },
+          "status": { "type": "integer", "description": "0=待支付 1=待发货 2=待收货 3=已完成 4=已取消 5=退款中 6=已退款" },
+          "payTime": { "type": "string", "format": "date-time" },
+          "createTime": { "type": "string", "format": "date-time" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/OrderItem" } }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "orderId": { "type": "integer" },
+          "productId": { "type": "integer" },
+          "productName": { "type": "string" },
+          "productImage": { "type": "string" },
+          "price": { "type": "number" },
+          "quantity": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "security": [{ "token": [] }],
+  "paths": {
+    "/login": {
+      "post": {
+        "tags": ["登录"],
+        "summary": "登录（无需 token）",
+        "security": [],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginDTO" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": { "application/json": { "schema": { "allOf": [
+              { "$ref": "#/components/schemas/Result" },
+              { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/LoginVO" } } }
+            ] } } }
+          }
+        }
+      }
+    },
+    "/users/info": {
+      "get": {
+        "tags": ["操作员"],
+        "summary": "获取当前登录用户信息",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/users": {
+      "get": { "tags": ["操作员"], "summary": "分页查询操作员", "parameters": [
+        { "name": "page", "in": "query", "schema": { "type": "integer" } },
+        { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
+        { "name": "name", "in": "query", "schema": { "type": "string" } },
+        { "name": "username", "in": "query", "schema": { "type": "string" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["操作员"], "summary": "新增操作员", "responses": { "200": { "description": "OK" } } }
+    },
+    "/users/{id}": {
+      "get": { "tags": ["操作员"], "summary": "查询操作员", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "delete": { "tags": ["操作员"], "summary": "删除操作员", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/users/logout": {
+      "post": { "tags": ["登录"], "summary": "退出登录", "responses": { "200": { "description": "OK" } } }
+    },
+    "/roles": {
+      "get": { "tags": ["角色"], "summary": "分页查询角色", "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["角色"], "summary": "新增角色", "responses": { "200": { "description": "OK" } } }
+    },
+    "/roles/all": {
+      "get": { "tags": ["角色"], "summary": "查询所有角色", "responses": { "200": { "description": "OK" } } }
+    },
+    "/roles/{id}": {
+      "get": { "tags": ["角色"], "summary": "查询角色", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "delete": { "tags": ["角色"], "summary": "删除角色", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/depts/tree": {
+      "get": { "tags": ["部门"], "summary": "部门树", "responses": { "200": { "description": "OK" } } }
+    },
+    "/depts": {
+      "get": { "tags": ["部门"], "summary": "分页查询部门", "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["部门"], "summary": "新增部门", "responses": { "200": { "description": "OK" } } }
+    },
+    "/depts/{id}": {
+      "get": { "tags": ["部门"], "summary": "查询部门", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "delete": { "tags": ["部门"], "summary": "删除部门", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/categories/tree": {
+      "get": { "tags": ["商品分类"], "summary": "分类树", "responses": { "200": { "description": "OK" } } }
+    },
+    "/categories": {
+      "get": { "tags": ["商品分类"], "summary": "分页查询分类", "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["商品分类"], "summary": "新增分类", "responses": { "200": { "description": "OK" } } }
+    },
+    "/categories/{id}": {
+      "get": { "tags": ["商品分类"], "summary": "查询分类", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "delete": { "tags": ["商品分类"], "summary": "删除分类", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/products": {
+      "get": { "tags": ["商品"], "summary": "分页查询商品", "parameters": [
+        { "name": "name", "in": "query", "schema": { "type": "string" } },
+        { "name": "categoryId", "in": "query", "schema": { "type": "integer" } },
+        { "name": "status", "in": "query", "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["商品"], "summary": "新增商品", "responses": { "200": { "description": "OK" } } }
+    },
+    "/products/{id}": {
+      "get": { "tags": ["商品"], "summary": "查询商品", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } },
+      "delete": { "tags": ["商品"], "summary": "删除商品", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/products/status/{id}/{status}": {
+      "put": { "tags": ["商品"], "summary": "上下架", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+        { "name": "status", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/banners": {
+      "get": { "tags": ["轮播图"], "summary": "分页查询轮播图", "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["轮播图"], "summary": "新增轮播图", "responses": { "200": { "description": "OK" } } }
+    },
+    "/banners/all": {
+      "get": { "tags": ["轮播图"], "summary": "查询所有启用轮播图", "responses": { "200": { "description": "OK" } } }
+    },
+    "/banners/{id}": {
+      "delete": { "tags": ["轮播图"], "summary": "删除轮播图", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/coupons": {
+      "get": { "tags": ["优惠券"], "summary": "分页查询优惠券", "responses": { "200": { "description": "OK" } } },
+      "post": { "tags": ["优惠券"], "summary": "新增优惠券", "responses": { "200": { "description": "OK" } } }
+    },
+    "/coupons/{id}": {
+      "delete": { "tags": ["优惠券"], "summary": "删除优惠券", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/orders": {
+      "get": { "tags": ["订单"], "summary": "分页查询订单", "parameters": [
+        { "name": "orderNo", "in": "query", "schema": { "type": "string" } },
+        { "name": "phone", "in": "query", "schema": { "type": "string" } },
+        { "name": "status", "in": "query", "schema": { "type": "integer" } },
+        { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/orders/{id}": {
+      "get": { "tags": ["订单"], "summary": "订单详情", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/orders/ship/{id}": {
+      "put": { "tags": ["订单"], "summary": "订单发货", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/orders/cancel/{id}": {
+      "put": { "tags": ["订单"], "summary": "取消订单", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/orders/refund/{id}": {
+      "put": { "tags": ["订单"], "summary": "订单退款", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/reviews": {
+      "get": { "tags": ["评价"], "summary": "分页查询评价", "responses": { "200": { "description": "OK" } } }
+    },
+    "/reviews/{id}": {
+      "delete": { "tags": ["评价"], "summary": "删除评价", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/c-users": {
+      "get": { "tags": ["C端用户"], "summary": "分页查询 C 端用户", "responses": { "200": { "description": "OK" } } }
+    },
+    "/c-users/{id}": {
+      "get": { "tags": ["C端用户"], "summary": "查询 C 端用户", "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/addresses/by-user/{userId}": {
+      "get": { "tags": ["收货地址"], "summary": "查询用户的所有地址", "parameters": [
+        { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/cart-items": {
+      "get": { "tags": ["购物车"], "summary": "分页查询购物车", "responses": { "200": { "description": "OK" } } }
+    },
+    "/stats/overview": {
+      "get": { "tags": ["数据概览"], "summary": "首页数据概览", "responses": {
+        "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OverviewVO" } } } }
+      } }
+    },
+    "/stats/sales-trend": {
+      "get": { "tags": ["统计"], "summary": "销售趋势（按日）", "parameters": [
+        { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/stats/product-ranking": {
+      "get": { "tags": ["统计"], "summary": "商品销量排行", "parameters": [
+        { "name": "topN", "in": "query", "schema": { "type": "integer", "default": 10 } }
+      ], "responses": { "200": { "description": "OK" } } }
+    },
+    "/stats/category-share": {
+      "get": { "tags": ["统计"], "summary": "分类销售占比", "responses": { "200": { "description": "OK" } } }
+    },
+    "/stats/order-status": {
+      "get": { "tags": ["统计"], "summary": "订单状态分布", "responses": { "200": { "description": "OK" } } }
+    },
+    "/operate-logs": {
+      "get": { "tags": ["操作日志"], "summary": "分页查询操作日志", "responses": { "200": { "description": "OK" } } }
+    },
+    "/upload": {
+      "post": {
+        "tags": ["文件"],
+        "summary": "文件上传",
+        "security": [],
+        "requestBody": {
+          "content": { "multipart/form-data": { "schema": {
+            "type": "object",
+            "properties": { "file": { "type": "string", "format": "binary" } }
+          } } }
+        },
+        "responses": { "200": { "description": "返回文件路径" } }
+      }
+    }
+  }
+}

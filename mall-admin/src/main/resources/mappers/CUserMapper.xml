@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mall.mapper.CUserMapper">
+
+    <!--  继承 BaseMapper 已提供 selectList / selectPage / update 等基础能力，本文件为空 -->
+
+</mapper>

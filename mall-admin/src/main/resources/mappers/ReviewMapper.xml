@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mall.mapper.ReviewMapper">
+
+    <resultMap id="ReviewMap" type="com.mall.entity.Review">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="rating" column="rating"/>
+        <result property="content" column="content"/>
+        <result property="createTime" column="create_time"/>
+        <result property="nickname" column="nickname"/>
+        <result property="productName" column="product_name"/>
+    </resultMap>
+
+    <select id="pageByQuery" resultMap="ReviewMap">
+        SELECT r.*, u.nickname, p.name AS product_name
+        FROM review r
+        LEFT JOIN c_user u ON r.user_id = u.id
+        LEFT JOIN product p ON r.product_id = p.id
+        <where>
+            <if test="query.productId != null">
+                AND r.product_id = #{query.productId}
+            </if>
+            <if test="query.rating != null">
+                AND r.rating = #{query.rating}
+            </if>
+        </where>
+        ORDER BY r.id DESC
+    </select>
+
+</mapper>
